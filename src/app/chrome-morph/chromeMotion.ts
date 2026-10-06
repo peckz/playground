@@ -6,8 +6,9 @@
  * where it sits (its centroid, which orbits the centre) and what it looks like
  * (points relative to that centroid, which morph from a circle into a blade).
  *
- * The whole move is one gesture: every piece orbits clockwise only, every
- * channel eases out without overshoot, so nothing ever turns back.
+ * The whole move is one gesture: every piece orbits one way only, clockwise
+ * or counter-clockwise, and every channel eases out without overshoot, so
+ * nothing ever turns back.
  *
  * Geometry lives in the 24-unit viewBox of the source icons.
  */
@@ -20,12 +21,16 @@ export type Shape = {
   local: Point[];
 };
 
+/** 1 orbits clockwise on screen, -1 counter-clockwise */
+export type Direction = 1 | -1;
+
 export type Track = {
   startAngle: number;
-  /** Always >= startAngle: pieces only ever orbit clockwise */
+  /** Past startAngle in the orbit's direction: pieces never turn back */
   endAngle: number;
-  /** Back at the dot one full lap on, > endAngle */
+  /** Back at the dot one full lap on, further round the same way */
   returnAngle: number;
+  direction: Direction;
   startRadius: number;
   endRadius: number;
   dot: Point[];
@@ -123,11 +128,14 @@ function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
   };
 }
 
-/** Snappy: almost no ease-in, then a long exponential-feeling glide. y never passes 1 */
-/** One curve for the whole spin: half the turn is done at 35%, the rest is the brake */
-const SPIN = cubicBezier(0.35, 0, 0.25, 1);
-/** Blooming and folding: fast off the mark, long settle into the spin's stop */
+/** One curve for the whole spin: eases in, peaks early, then a long soft brake. y never passes 1 */
+const SPIN = cubicBezier(0.3, 0, 0.2, 1);
+/** Folding back: fast off the mark, long settle into the spin's stop */
 const EXPAND = cubicBezier(0.3, 0, 0.1, 1);
+/** Blooming in: the dots stretch into blades from a standstill, so the shape blends instead of popping */
+const BLOOM = cubicBezier(0.45, 0, 0.25, 1);
+/** How long the bloom takes, as a fraction of the play */
+const BLOOM_LENGTH = 0.6;
 const COLOR_EASE = cubicBezier(0.4, 0, 0.2, 1);
 
 type Channel = {
@@ -150,15 +158,19 @@ function channelsFor(toLogo: boolean, expandAt: number): Channels {
       move: { start: 0, end: 1, ease: SPIN },
       shape: {
         start: expandAt,
-        end: Math.min(1, expandAt + 0.6),
-        ease: EXPAND,
+        end: Math.min(1, expandAt + BLOOM_LENGTH),
+        ease: BLOOM,
       },
       color: {
         start: Math.max(0, expandAt - 0.1),
         end: Math.min(1, expandAt + 0.35),
         ease: COLOR_EASE,
       },
-      core: { start: Math.min(0.9, expandAt + 0.12), end: 1, ease: EXPAND },
+      core: {
+        start: Math.min(0.9, expandAt + 0.12),
+        end: Math.min(1, expandAt + BLOOM_LENGTH),
+        ease: BLOOM,
+      },
     };
   }
   return {
@@ -270,9 +282,14 @@ function polar(point: Point) {
   };
 }
 
-/** Clockwise sweep from one angle to another, at least `spin` so every piece turns hard */
-function clockwiseSweep(from: number, to: number, spin: number) {
-  const base = (((to - from) % TAU) + TAU) % TAU;
+/** How far a piece turns from one angle to another, at least `spin` so every piece turns hard. Always positive */
+function sweepSize(
+  from: number,
+  to: number,
+  spin: number,
+  direction: Direction,
+) {
+  const base = ((((to - from) * direction) % TAU) + TAU) % TAU;
   const turns = Math.max(0, Math.ceil((spin - base) / TAU));
   return base + turns * TAU;
 }
@@ -287,10 +304,15 @@ const PERMUTATIONS = [
 ];
 
 /**
- * Pairs each dot with a blade so all of them sweep clockwise by roughly the
+ * Pairs each dot with a blade so all of them sweep the same way by roughly the
  * same `spin` degrees, which makes the three read as one rotating group.
  */
-export function buildTracks(dots: Shape[], blades: Shape[], spin: number) {
+export function buildTracks(
+  dots: Shape[],
+  blades: Shape[],
+  spin: number,
+  direction: Direction,
+) {
   const spinRadians = (spin * Math.PI) / 180;
   const dotPolar = dots.map((dot) => polar(dot.centroid));
   const bladePolar = blades.map((blade) => polar(blade.centroid));
@@ -303,10 +325,11 @@ export function buildTracks(dots: Shape[], blades: Shape[], spin: number) {
       if (!isOuter[dotIndex]) {
         return sum;
       }
-      const sweep = clockwiseSweep(
+      const sweep = sweepSize(
         dotPolar[dotIndex].angle,
         bladePolar[bladeIndex].angle,
         spinRadians,
+        direction,
       );
       return sum + (sweep - spinRadians) ** 2;
     }, 0);
@@ -319,10 +342,11 @@ export function buildTracks(dots: Shape[], blades: Shape[], spin: number) {
   const outerSweeps = bestOrder
     .map((bladeIndex, dotIndex) =>
       isOuter[dotIndex]
-        ? clockwiseSweep(
+        ? sweepSize(
             dotPolar[dotIndex].angle,
             bladePolar[bladeIndex].angle,
             spinRadians,
+            direction,
           )
         : null,
     )
@@ -335,18 +359,19 @@ export function buildTracks(dots: Shape[], blades: Shape[], spin: number) {
     const endAngle = bladePolar[bladeIndex].angle;
     // The middle dot has no angle of its own: it swings out with the group
     const sweep = isOuter[dotIndex]
-      ? clockwiseSweep(dotPolar[dotIndex].angle, endAngle, spinRadians)
+      ? sweepSize(dotPolar[dotIndex].angle, endAngle, spinRadians, direction)
       : groupSweep;
-    // The way back keeps going clockwise until the lap is whole. A short
+    // The way back keeps going the same way until the lap is whole. A short
     // leftover would feel limp after the big throw in, so it takes another lap
     let returnSweep = Math.ceil(sweep / TAU) * TAU - sweep;
     if (returnSweep < Math.PI / 2) {
       returnSweep += TAU;
     }
     return {
-      startAngle: endAngle - sweep,
+      startAngle: endAngle - sweep * direction,
       endAngle,
-      returnAngle: endAngle + returnSweep,
+      returnAngle: endAngle + returnSweep * direction,
+      direction,
       startRadius: dotPolar[dotIndex].radius,
       endRadius: bladePolar[bladeIndex].radius,
       dot: dot.local,
@@ -382,7 +407,7 @@ export function frameAt(
   const twistRadians = (settings.twist * Math.PI) / 180;
 
   const pieces = tracks.map((track): PieceFrame => {
-    // Both directions orbit clockwise: in from the dots, then on round the lap
+    // Both plays orbit the same way: in from the dots, then on round the lap
     const angle = toLogo
       ? lerp(track.startAngle, track.endAngle, travel)
       : lerp(track.endAngle, track.returnAngle, travel);
@@ -396,7 +421,8 @@ export function frameAt(
     // Each blade turns with its orbit. Forming, it starts behind and catches
     // up; folding away, it runs ahead, so the twist always adds to the spin
     const lag = twistRadians * (1 - shape);
-    const orientation = angle - track.endAngle + (toLogo ? -lag : lag);
+    const orientation =
+      angle - track.endAngle + (toLogo ? -lag : lag) * track.direction;
     const points = track.dot.map((dotPoint, index) => {
       const blended = {
         x: lerp(dotPoint.x, track.blade[index].x, shape),
@@ -417,6 +443,63 @@ export function frameAt(
     (2 * step);
 
   return { pieces, coreRadius: CORE_RADIUS * core, velocity };
+}
+
+/* ---------- One dot and three ---------- */
+
+const DOT_RADIUS = 2;
+/** How far the top and bottom dots sit from the middle one, in DOT_PATHS */
+const DOT_SPACING = 7;
+/** Splitting: slow while the neck stretches, quick as it snaps, soft into the slots. y never passes 1 */
+const SPLIT = cubicBezier(0.5, 0, 0.2, 1);
+/** Merging: the outer dots gather pace, then the goo pulls them into one */
+const MERGE = cubicBezier(0.45, 0, 0.35, 1);
+
+function circlePath(x: number, y: number, radius: number) {
+  return (
+    `M${(x - radius).toFixed(3)} ${y.toFixed(3)}` +
+    `a${radius.toFixed(3)} ${radius.toFixed(3)} 0 1 0 ${(radius * 2).toFixed(3)} 0` +
+    `a${radius.toFixed(3)} ${radius.toFixed(3)} 0 1 0 ${(-radius * 2).toFixed(3)} 0Z`
+  );
+}
+
+/** The resting single dot. All three pieces draw it, stacked */
+export const SINGLE_DOT_PATH = circlePath(CENTER, CENTER, DOT_RADIUS);
+
+/** The three dots, top to bottom. `spread` 0 = stacked into one dot, 1 = the menu dots */
+function dotsFrame(spread: number, radius: number): Frame {
+  const pieces = [-1, 0, 1].map((side, index): PieceFrame => {
+    const y = CENTER + side * DOT_SPACING * spread;
+    return { d: circlePath(CENTER, y, radius), mix: 0, colorIndex: index };
+  });
+  return { pieces, coreRadius: 0, velocity: 0 };
+}
+
+/** On load: the single dot swells in at the centre */
+export function appearFrameAt(progress: number): Frame {
+  return dotsFrame(0, DOT_RADIUS * EXPAND(progress));
+}
+
+/** One dot splitting into three, or three merging back into one */
+export function splitFrameAt(progress: number, toThree: boolean): Frame {
+  const spread = toThree ? SPLIT(progress) : 1 - MERGE(progress);
+  return dotsFrame(spread, DOT_RADIUS);
+}
+
+/**
+ * How gooey the split is at `progress`, 1 = full. The goo has to be gone by the
+ * time three dots rest, because it slightly rounds and swells a still dot.
+ * Merging, it comes up early, since the dots bridge before they touch
+ */
+export function splitGooAt(progress: number, toThree: boolean) {
+  if (toThree) {
+    const rise = EXPAND(progress / 0.15);
+    const melt = COLOR_EASE((progress - 0.55) / 0.37);
+    return rise * (1 - melt);
+  }
+  const rise = COLOR_EASE((progress - 0.05) / 0.3);
+  const melt = COLOR_EASE((progress - 0.85) / 0.15);
+  return rise * (1 - melt);
 }
 
 /* ---------- Colour ---------- */

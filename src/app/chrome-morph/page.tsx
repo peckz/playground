@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description: "The menu dots spin up and morph into the Chrome logo",
 };
 
-export default function ChromePage() {
-  return <ChromeStudio />;
+type ChromePageProps = {
+  searchParams: Promise<{ record?: string }>;
+};
+
+export default async function ChromePage(props: ChromePageProps) {
+  const searchParams = await props.searchParams;
+  return <ChromeStudio record={searchParams.record !== undefined} />;
 }

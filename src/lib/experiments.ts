@@ -9,6 +9,7 @@ export const experiments: Experiment[] = [
   {
     slug: "chrome-morph",
     title: "Chrome morph",
-    description: "The menu dots spin up and morph into the Chrome logo.",
+    description:
+      "A dot splits into three on hover, then morphs into the Chrome logo on click.",
   },
 ];

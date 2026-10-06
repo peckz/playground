@@ -27,4 +27,23 @@
   padding: 32px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  background: transparent;
+  transition: background-color 200ms ease;
+}
+
+/* A faint tint of the theme ink, so it reads as a button on any background */
+@media (hover: hover) {
+  .button:hover {
+    background: color-mix(in oklab, var(--ink) 6%, transparent);
+  }
+}
+
+.button:active {
+  background: color-mix(in oklab, var(--ink) 10%, transparent);
+  transition-duration: 80ms;
+}
+
+/* Recording: a resting pointer must not tint the stage mid-take */
+.button.recording {
+  background: transparent;
 }
