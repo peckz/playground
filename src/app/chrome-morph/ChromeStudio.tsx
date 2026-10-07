@@ -110,6 +110,7 @@ type Settings = {
   soften: number;
   goo: number;
   split: number;
+  size: number;
   speed: number;
   freeze: boolean;
   colors: ColorMode;
@@ -140,8 +141,8 @@ export default function ChromeStudio(props: ChromeStudioProps) {
   const layerRefs = useRef<(SVGGElement | null)[]>([]);
   const pieceRefs = useRef<(SVGPathElement | null)[][]>(LAYERS.map(() => []));
   const coreRefs = useRef<(SVGCircleElement | null)[]>([]);
+  const svgRef = useRef<SVGSVGElement>(null);
   const softenGroupRef = useRef<SVGGElement>(null);
-  const softenBlurRef = useRef<SVGFEGaussianBlurElement>(null);
   const gooGroupRef = useRef<SVGGElement>(null);
   const gooBlurRef = useRef<SVGFEGaussianBlurElement>(null);
 
@@ -354,16 +355,22 @@ export default function ChromeStudio(props: ChromeStudioProps) {
     });
   }
 
+  /**
+   * A CSS blur on the svg runs on the GPU. The same blur as an svg <filter> is
+   * redrawn on the CPU every frame in Safari, which dropped iOS to ~10fps
+   */
   function renderSoften(stdDeviation: number) {
-    if (stdDeviation < 0.01) {
-      softenGroupRef.current?.removeAttribute("filter");
+    const svg = svgRef.current;
+    if (!svg) {
       return;
     }
-    softenBlurRef.current?.setAttribute(
-      "stdDeviation",
-      stdDeviation.toFixed(3),
-    );
-    softenGroupRef.current?.setAttribute("filter", "url(#chrome-soften)");
+    if (stdDeviation < 0.01) {
+      svg.style.filter = "";
+      return;
+    }
+    // stdDeviation is in viewBox units, and the svg draws `size` px per unit
+    const pixels = stdDeviation * settingsRef.current.size;
+    svg.style.filter = `blur(${pixels.toFixed(2)}px)`;
   }
 
   /** At rest the source paths are drawn as-is, so the still frame is the real icon */
@@ -593,6 +600,7 @@ export default function ChromeStudio(props: ChromeStudioProps) {
             )}
           >
             <svg
+              ref={svgRef}
               viewBox="0 0 24 24"
               width={pixelSize}
               height={pixelSize}
@@ -600,16 +608,6 @@ export default function ChromeStudio(props: ChromeStudioProps) {
               aria-hidden="true"
             >
               <defs>
-                <filter
-                  id="chrome-soften"
-                  filterUnits="userSpaceOnUse"
-                  x={-6}
-                  y={-6}
-                  width={36}
-                  height={36}
-                >
-                  <feGaussianBlur ref={softenBlurRef} stdDeviation={0} />
-                </filter>
                 <filter
                   id="chrome-goo"
                   filterUnits="userSpaceOnUse"

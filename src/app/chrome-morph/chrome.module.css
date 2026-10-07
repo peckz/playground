@@ -20,6 +20,8 @@
 .icon {
   display: block;
   overflow: visible;
+  /* Its own GPU layer, so the motion blur never repaints the page around it */
+  will-change: filter;
 }
 
 .button {
