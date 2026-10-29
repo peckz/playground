@@ -22,5 +22,6 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# agents
-.claude/
+# agents: local settings stay out, shared skills are published
+.claude/*
+!.claude/skills/
