@@ -7,7 +7,7 @@ description: Animating inline SVG line icons so they feel premium, with CSS keyf
 
 What I learned animating line icons: an icon grid with per-icon hover choreography and a
 morphing cursor, a velocity-reactive bell, and several wifi icons that ended up as this
-repo's [wifi toggle](../../../src/app/wifi-toggle) (search, load, connect). Read this before
+repo's [wifi toggle](../../src/app/wifi-toggle) (search, load, connect). Read this before
 building anything similar.
 
 Two ways to build, pick by the play:

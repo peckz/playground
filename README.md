@@ -20,7 +20,16 @@ Then open [localhost:3000](http://localhost:3000). Each experiment has a [leva](
 
 ## Skill
 
-[`svg-icon-animation`](.claude/skills/svg-icon-animation/SKILL.md) is the Claude Code skill these experiments were built with: curves, stroke-dash recipes, bounce physics, what read as cheap and why, and how to check motion frame by frame. Open the repo in [Claude Code](https://claude.com/claude-code) and it loads on its own when you animate an icon.
+[`svg-icon-animation`](skills/svg-icon-animation/SKILL.md) is the [Claude Code](https://claude.com/claude-code) skill these experiments were built with: curves, stroke-dash recipes, bounce physics, what read as cheap and why, and how to check motion frame by frame.
+
+Install it for every project:
+
+```sh
+git clone https://github.com/peckz/playground.git
+cp -r playground/skills/svg-icon-animation ~/.claude/skills/
+```
+
+Or for one project, copy it into that project's `.claude/skills/` instead. Claude loads it on its own when you animate an icon.
 
 ## License
 

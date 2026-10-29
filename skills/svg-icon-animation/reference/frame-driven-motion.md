@@ -1,6 +1,6 @@
 # Frame-driven SVG motion
 
-Learned building the wifi icons that became the [wifi toggle](../../../../src/app/wifi-toggle):
+Learned building the wifi icons that became the [wifi toggle](../../../src/app/wifi-toggle):
 three versions in a private playground (a lap with a hopping checkmark, a bounce into a green
 badge, and a lap into the badge), then this repo's toggle, which combines the best parts.
 The end results were called "exceptional" and "super premium".
