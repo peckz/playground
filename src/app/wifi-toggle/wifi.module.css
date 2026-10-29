@@ -1,0 +1,44 @@
+/* --bg and --ink come from the theme picker, set inline on the canvas */
+.canvas {
+  background: var(--bg);
+  color: var(--ink);
+  transition:
+    background-color 400ms ease,
+    color 400ms ease;
+}
+
+.back {
+  opacity: 0.6;
+  transition: opacity 160ms ease;
+}
+
+.back:hover {
+  opacity: 1;
+}
+
+/* Rendered at an integer multiple of the 32-unit viewBox so strokes stay on whole pixels */
+.icon {
+  display: block;
+  overflow: visible;
+}
+
+.button {
+  display: block;
+  padding: 32px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  background: transparent;
+  transition: background-color 200ms ease;
+}
+
+/* A faint tint of the theme ink, so it reads as a button on any background */
+@media (hover: hover) {
+  .button:hover {
+    background: color-mix(in oklab, var(--ink) 6%, transparent);
+  }
+}
+
+.button:active {
+  background: color-mix(in oklab, var(--ink) 10%, transparent);
+  transition-duration: 80ms;
+}

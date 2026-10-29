@@ -7,6 +7,12 @@ export type Experiment = {
 // Newest first. Each slug matches a folder in src/app.
 export const experiments: Experiment[] = [
   {
+    slug: "wifi-toggle",
+    title: "Wifi toggle",
+    description:
+      "A wave, a few loading hops, then the dot lands and grows into a checkmark.",
+  },
+  {
     slug: "chrome-morph",
     title: "Chrome morph",
     description:

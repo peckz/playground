@@ -6,6 +6,7 @@ Motion and interaction experiments by [Petar Cirkovic](https://pettar.com), open
 
 | Experiment                           | What it does                                                                 |
 | ------------------------------------ | ---------------------------------------------------------------------------- |
+| [Wifi toggle](src/app/wifi-toggle)   | A wave, a few loading hops, then the dot lands and grows into a checkmark.   |
 | [Chrome morph](src/app/chrome-morph) | A dot splits into three on hover, then morphs into the Chrome logo on click. |
 
 ## Running locally
