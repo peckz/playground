@@ -6,6 +6,7 @@ Motion and interaction experiments by [Petar Cirkovic](https://pettar.com), open
 
 | Experiment                           | What it does                                                                 |
 | ------------------------------------ | ---------------------------------------------------------------------------- |
+| [Warp 3D icon](src/app/warp)         | Two glass blocks in three.js that tilt with the cursor, in five colours.     |
 | [Wifi toggle](src/app/wifi-toggle)   | A wave, a few loading hops, then the dot lands and grows into a checkmark.   |
 | [Chrome morph](src/app/chrome-morph) | A dot splits into three on hover, then morphs into the Chrome logo on click. |
 
@@ -17,6 +18,10 @@ npm run dev
 ```
 
 Then open [localhost:3000](http://localhost:3000). Each experiment has a [leva](https://github.com/pmndrs/leva) panel for tuning it live. Press `H` to hide the panel and `Esc` to go back to the index. Add `?record` to an experiment URL for a clean stage to screen-record: panel hidden, autoplay on.
+
+## Warp 3D icon
+
+[`warp/`](warp) has the files behind the Warp icon experiment, free to download: wallpapers in five colours, the two Blender scenes, and the scripts that render them.
 
 ## Skill
 
