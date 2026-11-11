@@ -24,3 +24,6 @@ next-env.d.ts
 
 # agents
 .claude/
+
+# python
+__pycache__/
